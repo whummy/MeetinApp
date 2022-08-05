@@ -17,9 +17,9 @@ namespace Infrastructure.Data.DbContext.Configurations
             builder.Property(x => x.Email).IsRequired();
             builder.Property(x => x.FirstName).IsRequired();
             builder.HasOne(b => b.Meeting)
-               .WithMany(a => a.Participants)
-               .HasForeignKey(x => x.MeetingId)
-               .OnDelete(DeleteBehavior.Cascade);
+               .WithMany(a => a.Participants);
+               //.HasForeignKey(x => x.MeetingId)
+               //.OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

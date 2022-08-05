@@ -1,234 +1,206 @@
-﻿using Amazon.S3;
-using API.Configurations;
-using API.Middlewares;
-using Application;
-using Application.Contracts.V1;
-using Application.Contracts.V1.Activities;
-using Application.Resources;
-using Application.Services.V1;
-using Application.Services.V1.Activities;
-using Application.Settings;
+﻿using API.Middlewares;
+using Application.Contracts;
+using Application.Services;
 using Application.Validations;
-using Domain.Entities;
+using Domain.ConfigurationModels;
+using Domain.Entities.Identities;
 using FluentValidation.AspNetCore;
-using Hangfire;
 using Infrastructure;
 using Infrastructure.Contracts;
 using Infrastructure.Data.DbContext;
-using Infrastructure.Utils.AWS;
 using Infrastructure.Utils.Logger;
+using Marvin.Cache.Headers;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Globalization;
 using System.Text;
 
+namespace API.Extensions;
 
-namespace API.Extensions
+public static class ServiceExtensions
 {
-    public static class ServiceExtensions
+    public static void ConfigureCors(this IServiceCollection serviceCollection) =>
+        serviceCollection.AddCors(options =>
+        {
+            options.AddPolicy("CorsPolicy", builder =>
+                builder.AllowAnyOrigin()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .WithExposedHeaders("X-Pagination"));
+        });
+    /// <summary>
+    /// Configure service that arent typeof (IAutoDependencyService) at the application layer
+    /// </summary>
+    /// <param name="services"></param>
+    public static void ConfigureLoggerService(this IServiceCollection services)
     {
-        private static readonly ILoggerFactory ContextLoggerFactory = LoggerFactory.Create(builder => { builder.AddConsole(); });
+        services.AddSingleton<ILoggerManager, LoggerManager>();
+    }
 
-        public static void ConfigureCors(this IServiceCollection services)
-        {
-            services.AddCors(opts =>
+    public static void ConfigureRepositoryManager(this IServiceCollection serviceCollection) =>
+        serviceCollection.AddScoped<IRepositoryManager, RepositoryManager>();
+
+    public static void ConfigureServiceManager(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddScoped<IServiceManager, ServiceManager>();
+    }
+    public static void ConfigureIisIntegration(this IServiceCollection serviceCollection) =>
+        serviceCollection.Configure<IISOptions>(options => { });
+
+    public static void ConfigureServiceManager(this IServiceCollection serviceCollection) =>
+        serviceCollection.AddScoped<IServiceManager, ServiceManager>();
+
+    /// <summary>
+    /// Configure binding of IConfigurations to typed object for better maintainability.    
+    /// </summary>
+    /// <param name="services"></param>
+    /// <param name="configuration"></param>
+
+    public static void ConfigureSqlContext(this IServiceCollection serviceCollection, IConfiguration configuration) =>
+        serviceCollection.AddDbContext<AppDbContext>(
+            opts =>
             {
-                opts.AddPolicy("CorsPolicy", builder =>
-                {
-                    builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
-                });
+                opts.UseSqlServer(configuration.GetConnectionString("DefaultConnection"));
             });
-        }
 
-        public static void ConfigureLoggerService(this IServiceCollection services)
+    public static void ConfigureVersioning(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddApiVersioning(opt =>
         {
-            services.AddSingleton<ILoggerManager, LoggerManager>();
-        }
-
-        public static void ConfigureRepositoryManager(this IServiceCollection serviceCollection) =>
-            serviceCollection.AddScoped<IRepositoryManager, RepositoryManager>();
-
-        public static void ConfigureServiceManager(this IServiceCollection services, IConfiguration configuration)
+            opt.ReportApiVersions = true;
+            opt.AssumeDefaultVersionWhenUnspecified = true;
+            opt.DefaultApiVersion = new ApiVersion(1, 0);
+        });
+        services.AddVersionedApiExplorer(opt =>
         {
-            services.AddScoped<IServiceManager, ServiceManager>();
-            services.AddHttpClient<AssessmentService>();
-        }
+            opt.GroupNameFormat = "'v'VVV";
+            opt.SubstituteApiVersionInUrl = true;
+        });
+    }
 
+    public static void ConfigureResponseCaching(this IServiceCollection services) =>
+        services.AddResponseCaching();
 
-        public static void ConfigureIisIntegration(this IServiceCollection services)
+    public static void ConfigureHttpCacheHeaders(this IServiceCollection services) =>
+        services.AddHttpCacheHeaders(expirationOpt =>
         {
-            services.Configure<IISOptions>(options => { });
-        }
-
-        public static void ConfigureSqlContext(this IServiceCollection services, IConfiguration configuration)
+            expirationOpt.MaxAge = 65;
+            expirationOpt.CacheLocation = CacheLocation.Private;
+        }, validationOpt =>
         {
-            services.AddDbContext<AppDbContext>(opts =>
-                opts
-                    .UseLoggerFactory(ContextLoggerFactory)
-                    .UseSqlServer(configuration.GetConnectionString("DefaultConnection"), options => options.EnableRetryOnFailure()));
-        }
 
-        /// <summary>
-        /// Configure binding of IConfigurations to typed object for better maintainability.    
-        /// </summary>
-        /// <param name="services"></param>
-        /// <param name="configuration"></param>
-        public static void ConfigureIOObjects(this IServiceCollection services, IConfiguration configuration)
+            validationOpt.MustRevalidate = true;
+        });
+
+
+    public static void ConfigureIdentity(this IServiceCollection services)
+    {
+        var builder = services.AddIdentity<User, Role>(opt =>
         {
-            services.Configure<AwsSettings>(configuration.GetSection(nameof(AwsSettings)));
-            services.Configure<FileSettings>(configuration.GetSection(nameof(FileSettings)));
-            services.Configure<AzureSettings>(configuration.GetSection(nameof(AzureSettings)));
-        }
+            opt.Password.RequireDigit = true;
+            opt.Password.RequireLowercase = true;
+            opt.Password.RequireUppercase = true;
+            opt.Password.RequireNonAlphanumeric = false;
+            opt.Password.RequiredLength = 8;
+            opt.User.RequireUniqueEmail = true;
+        })
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddDefaultTokenProviders();
+    }
 
-        public static void ConfigureJwt(this IServiceCollection services, IConfiguration configuration)
+    public static void ConfigureJWT(this IServiceCollection services, IConfiguration configuration)
+    {
+        var jwtConfiguration = new JwtConfiguration();
+        configuration.Bind(jwtConfiguration.Section, jwtConfiguration);
+        // var jwtSettings = configuration.GetSection("JwtSettings");
+        // var secretKey = Environment.GetEnvironmentVariable("JWTSECRET");
+        // var secretKey = jwtSettings["secret"];
+        var secretKey = jwtConfiguration.Secret;
+
+        services.AddAuthentication(opt =>
         {
-            var jwtSettings = configuration.GetSection("JwtSettings");
-            var jwtUserSecret = jwtSettings.GetSection("Secret").Value;
-
-            services.AddAuthentication(opt =>
+            opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        }).AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
             {
-                opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            }).AddJwtBearer(options =>
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = jwtConfiguration.ValidIssuer,
+                ValidAudience = jwtConfiguration.ValidAudience,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtConfiguration.Secret))
+            };
+        });
+    }
+
+    public static void ConfigureSwagger(this IServiceCollection services)
+    {
+        services.AddSwaggerGen(s =>
+        {
+            s.SwaggerDoc("v1", new OpenApiInfo
             {
-                options.RequireHttpsMetadata = false;
-                options.SaveToken = true;
-                options.TokenValidationParameters = new TokenValidationParameters
+                Title = "Prunedge Web API",
+                Version = "v1",
+                Description = "Prunedge Web API Template",
+                TermsOfService = new Uri("https://prunedge.com/terms"),
+                Contact = new OpenApiContact
                 {
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtSettings.GetSection("ValidIssuer").Value,
-                    ValidAudience = jwtSettings.GetSection("ValidAudience").Value,
-                    IssuerSigningKey = new
-                        SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtUserSecret))
-                };
+                    Name = "Prunedge Admin",
+                    Email = "admin@prunedge.com",
+                    Url = new Uri("https://prunedge.com")
+                },
+                License = new OpenApiLicense
+                {
+                    Name = "Prunedge Developer Licence",
+                    Url = new Uri("https://prunedge.com/licence")
+                }
             });
-        }
+            //s.SwaggerDoc("v2", new OpenApiInfo { Title = "Prunedge Web API2", Version = "v2" });
 
-        public static void ConfigureMvc(this IServiceCollection services)
-        {
-            services.AddMvc()
-                .ConfigureApiBehaviorOptions(o =>
-                {
-                    o.InvalidModelStateResponseFactory = context => new ValidationFailedResult(context.ModelState);
-                }).AddFluentValidation(x => x.RegisterValidatorsFromAssemblyContaining<UserValidator>());
-            services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-        }
+            //var xmlFile = $"{typeof(Presentation.AssemblyReference).Assembly.GetName().Name}.xml";
+            //var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            // s.IncludeXmlComments(xmlPath);
 
-        public static void ConfigureHangfire(this IServiceCollection services, IConfiguration configuration)
-        {
-            services.AddHangfire(x =>
-                x.UseSqlServerStorage(configuration.GetConnectionString("DefaultConnection")));
-            services.AddHangfireServer();
-        }
-
-        public static void ConfigureAWSServices(this IServiceCollection services, IConfiguration configuration)
-        {
-            // var options = configuration.GetAWSOptions();
-            services.AddAWSService<IAmazonS3>(configuration.GetAWSOptions());
-            services.AddTransient<IAwsS3Client, AwsS3Client>();
-        }
-
-        public static void ConfigureApiVersioning(this IServiceCollection services, IConfiguration configuration)
-        {
-            services.AddApiVersioning(opt =>
+            s.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
-                opt.AssumeDefaultVersionWhenUnspecified = true;
-                opt.DefaultApiVersion = new ApiVersion(1, 0);
-                opt.ReportApiVersions = true;
+                In = ParameterLocation.Header,
+                Description = "Add JWT with Bearer",
+                Name = "Authorization",
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = "Bearer"
             });
-            services.AddVersionedApiExplorer(opt =>
+
+            s.AddSecurityRequirement(new OpenApiSecurityRequirement()
             {
-                opt.GroupNameFormat = "'v'VVV";
-                opt.SubstituteApiVersionInUrl = true;
-            });
-            services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
-            services.AddMvcCore().AddApiExplorer();
-        }
-
-        /// <summary>
-        /// Configure service that arent typeof (IAutoDependencyService) at the application layer
-        /// </summary>
-        /// <param name="services"></param>
-        public static void ConfigureApplicationService(this IServiceCollection services)
-        {
-            services.AddApplicationServices();
-        }
-
-        public static void ConfigureSwagger(this IServiceCollection services)
-        {
-            services.AddSwaggerGen(c =>
-            {
-                c.OperationFilter<RemoveVersionFromParameter>();
-                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
-                    Name = "Authorization",
-                    Type = SecuritySchemeType.ApiKey,
-                    Scheme = "Bearer",
-                    BearerFormat = "JWT",
-                    In = ParameterLocation.Header,
-                    Description = "JWT Authorization header using the Bearer scheme."
-                });
-
-                c.AddSecurityRequirement(new OpenApiSecurityRequirement
-                {
+                    new OpenApiSecurityScheme
                     {
-                          new OpenApiSecurityScheme
-                            {
-                                Reference = new OpenApiReference
-                                {
-                                    Type = ReferenceType.SecurityScheme,
-                                    Id = "Bearer"
-                                }
-                            },
-                            new string[] {}
-                    }
-                });
-
-                // TODO: Fix the Docker error on this
-                //var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-                //var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
-                //c.IncludeXmlComments(xmlPath);
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        },
+                        Name = "Bearer"
+                    },
+                    new List<string>()
+                }
             });
-        }
+        });
+    }
 
-        public static void ConfigureGlobalization(this IServiceCollection services)
-        {
-            services.AddLocalization();
-            services.Configure<RequestLocalizationOptions>(options =>
+    public static void ConfigureMvc(this IServiceCollection services)
+    {
+        services.AddMvc()
+            .ConfigureApiBehaviorOptions(o =>
             {
-                var supportedCultures = new List<CultureInfo>
-                {
-                    new CultureInfo("en"),
-                };
-                options.DefaultRequestCulture = new RequestCulture("en");
-                options.SupportedCultures = supportedCultures;
-                options.SupportedUICultures = supportedCultures;
-            });
-            services.AddSingleton<IValidationLocalizerService, ValidationLocalizerService>();
-            services.AddSingleton<IRestErrorLocalizerService, RestErrorLocalizerService>();
-        }
-
-        public static void ConfigureIdentity(this IServiceCollection services)
-        {
-            var builder = services.AddIdentityCore<User>(opts =>
-            {
-                opts.Password.RequireDigit = true;
-                opts.Password.RequiredLength = 8;
-                opts.Password.RequireLowercase = true;
-                opts.Password.RequireUppercase = true;
-                opts.Password.RequireNonAlphanumeric = false;
-                opts.User.RequireUniqueEmail = true;
-            }).AddRoles<Role>().AddEntityFrameworkStores<AppDbContext>().AddDefaultTokenProviders();
-        }
+                o.InvalidModelStateResponseFactory = context => new ValidationFailedResult(context.ModelState);
+            }).AddFluentValidation(x => x.RegisterValidatorsFromAssemblyContaining<UserValidator>());
+        services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
     }
 }

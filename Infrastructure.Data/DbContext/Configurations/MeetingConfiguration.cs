@@ -15,10 +15,8 @@ namespace Infrastructure.Data.DbContext.Configurations
         {
 
             builder.Property(x => x.Title).IsRequired();
-            builder.HasOne(x => x.Creator)
-                 .WithMany()
-                 .HasForeignKey(x => x.CreatedById)
-                 .OnDelete(DeleteBehavior.Cascade);
+            builder.HasMany(x => x.Participants)
+                 .WithOne(x => x.Meeting);
         }
     }
 }

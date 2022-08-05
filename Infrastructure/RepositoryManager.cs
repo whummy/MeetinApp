@@ -1,11 +1,7 @@
-﻿using Infrastructure.Contracts;
-using Infrastructure.Contracts.Identities;
-using Infrastructure.Contracts.CampaignPoll;
+﻿using Infrastructure.Contract.Identities;
+using Infrastructure.Contracts;
 using Infrastructure.Data.DbContext;
-using Infrastructure.Repositories;
 using Infrastructure.Repositories.Identities;
-using Infrastructure.Repositories.CampaignPoll;
-using Infrastructure.Contract.Identities;
 
 namespace Infrastructure;
 

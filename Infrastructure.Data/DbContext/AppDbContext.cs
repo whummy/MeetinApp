@@ -1,5 +1,6 @@
 ﻿using Domain.Entities;
 using Domain.Entities.Identities;
+using Infrastructure.Data.DbContext.Configurations;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -35,7 +36,7 @@ namespace Infrastructure.Data.DbContext
             base.OnModelCreating(modelBuilder);
 
             #region Fluent Configurations
-            //modelBuilder.ApplyConfigurationsFromAssembly(typeof(UserConfiguration).Assembly);
+            modelBuilder.ApplyConfigurationsFromAssembly(typeof(UserConfiguration).Assembly);
             #endregion
         }
 

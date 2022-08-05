@@ -14,3 +14,4 @@ namespace Domain.Entities.Identities
         public Guid MeetingId { get; set; }
         public Meeting Meeting { get; set; }
     }
+}
