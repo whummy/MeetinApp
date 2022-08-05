@@ -1,0 +1,15 @@
+bin/
+
+obj/
+
+/packages/
+
+Migrations/
+
+.idea/
+
+.vs/
+
+.vscode/
+
+appsettings.Development.json
