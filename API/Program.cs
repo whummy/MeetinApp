@@ -48,6 +48,8 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 app.SeedRoleData().Wait();
+app.SeedMeetingData().Wait();
+app.Seed().Wait();
 
 var apiVersionDescriptionProvider = app.Services.GetRequiredService<IApiVersionDescriptionProvider>();
 

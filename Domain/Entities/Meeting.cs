@@ -15,7 +15,7 @@ namespace Domain.Entities
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
         public bool IsActive { get; set; }
-        public Guid? CreatedById { get; set; }
+       // public Guid? CreatedById { get; set; }
        // public User Creator { get; set; }
         public ICollection<User> Participants { get; set; }
     }

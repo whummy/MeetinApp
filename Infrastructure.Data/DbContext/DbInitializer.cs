@@ -1,4 +1,5 @@
-﻿using Domain.Entities.Identities;
+﻿using Domain.Entities;
+using Domain.Entities.Identities;
 using Domain.Enums;
 using Domain.Helper;
 using Microsoft.AspNetCore.Identity;
@@ -40,6 +41,31 @@ namespace Infrastructure.Data.DbContext
             }
         }
 
+        public static async Task SeedMeetingData(this IHost host)
+        {
+            var serviceProvider = host.Services.CreateScope().ServiceProvider;
+            var context = serviceProvider.GetRequiredService<AppDbContext>();
+            var meetings = new List<Meeting>
+            {
+                new Meeting
+                {
+                    Id = Guid.NewGuid(),
+                    Title = "Tomisin's Party",
+                    MeetingCode = 567578,
+                    StartTime = DateTime.Now,
+                    EndTime = DateTime.Now,
+                    IsActive = true,
+                }
+               
+            };
+
+            if (!context.Meetings.Any())
+            {
+                await context.AddRangeAsync(meetings);
+                await context.SaveChangesAsync();
+            }
+        }
+
         public static async Task Seed(this IHost host)
         {
             using var scope = host.Services.CreateScope();
@@ -70,6 +96,7 @@ namespace Infrastructure.Data.DbContext
                     Email = email,
                     UserName = email,
                     PhoneNumber = "07036HRMS000",
+                    MeetingId = Guid.Parse("BC971EA3-02B9-47FC-876D-49FF237229F5"),
                 };
 
                 var result = await userManager.CreateAsync(newUser, "Admin123@");
