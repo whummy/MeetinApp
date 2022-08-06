@@ -17,6 +17,6 @@ namespace Domain.Entities
         public bool IsActive { get; set; }
        // public Guid? CreatedById { get; set; }
        // public User Creator { get; set; }
-        public ICollection<User> Participants { get; set; }
+        public ICollection<Participant> Participants { get; set; }
     }
 }

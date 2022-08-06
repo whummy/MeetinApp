@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Infrastructure.Contract
 {
-    public interface IMeetingRepository : IRepositoryBase<Meeting>
+    public interface IParticipantRepository : IRepositoryBase<Participant>
     {
     }
 }

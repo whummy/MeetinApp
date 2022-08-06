@@ -16,10 +16,7 @@ namespace Infrastructure.Data.DbContext.Configurations
             builder.HasIndex(x => x.Email).IsUnique();
             builder.Property(x => x.Email).IsRequired();
             builder.Property(x => x.FirstName).IsRequired();
-            builder.HasOne(b => b.Meeting)
-               .WithMany(a => a.Participants);
-               //.HasForeignKey(x => x.MeetingId)
-               //.OnDelete(DeleteBehavior.Cascade);
+            builder.Property(x => x.LastName).IsRequired();
         }
     }
 }
