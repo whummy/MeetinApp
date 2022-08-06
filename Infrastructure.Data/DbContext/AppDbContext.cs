@@ -43,6 +43,7 @@ namespace Infrastructure.Data.DbContext
 
         #region DB Sets
         public DbSet<Meeting> Meetings { get; set; }
+        public DbSet<Participant> Participants { get; set; }
 
         #endregion
     }

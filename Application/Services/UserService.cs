@@ -1,14 +1,17 @@
 ﻿using Application.Contracts;
+using Application.DataTransferObjects;
+using Application.Helpers;
 using AutoMapper;
 using Domain.Entities.Identities;
 using Infrastructure.Contracts;
 using Infrastructure.Utils.Logger;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 
 namespace Application.Services
 {
-    public class UserService :IUserService
+    public class UserService : IUserService
     {
         private readonly IRepositoryManager _repository;
         private readonly UserManager<User> _userManager;

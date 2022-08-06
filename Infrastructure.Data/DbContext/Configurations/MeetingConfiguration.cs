@@ -13,7 +13,6 @@ namespace Infrastructure.Data.DbContext.Configurations
     {
         public void Configure(EntityTypeBuilder<Meeting> builder)
         {
-
             builder.Property(x => x.Title).IsRequired();
             builder.HasMany(x => x.Participants)
                  .WithOne(x => x.Meeting);
