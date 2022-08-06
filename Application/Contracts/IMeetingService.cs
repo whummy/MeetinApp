@@ -8,5 +8,6 @@ namespace Application.Contracts
 {
     public interface IMeetingService
     {
+        Task<SuccessResponse<MeetingDTO>> CreateMeeting(MeetingCreateDTO model);
     }
 }
