@@ -17,14 +17,10 @@ namespace Application.Services
             _mapper = mapper;
         }
 
-        public Task<SuccessResponse<MeetingDTO>> CreateMeeting(MeetingCreateDTO model)
+        public async Task<SuccessResponse<MeetingDTO>> CreateMeeting(MeetingCreateDTO model, Guid Id)
         {
-            throw new NotImplementedException();
-        }
-
-        public Task<SuccessResponse<MeetingDTO>> CreateMeeting(MeetingCreateDTO model)
-        {
-            throw new NotImplementedException();
+            var meeting = await _repository.Meeting.GetByIdAsync(Id);
+            if()
         }
     }
 }
