@@ -13,6 +13,7 @@ public class ServiceManager : IServiceManager
     private readonly Lazy<IAuthenticationService> _authenticationService;
     private readonly Lazy<IUserService> _userService;
     private readonly Lazy<IMeetingService> _meetingService;
+    private readonly Lazy<IParticipantService> _participantService;
 
 
     public ServiceManager(IRepositoryManager repositoryManager,
@@ -31,9 +32,13 @@ public class ServiceManager : IServiceManager
 
         _meetingService = new Lazy<IMeetingService>(
                 () => new MeetingService(repositoryManager, mapper));
+        _participantService = new Lazy<IParticipantService>(
+                () => new ParticipantService(repositoryManager, mapper));
     }
 
     public IAuthenticationService AuthenticationService => _authenticationService.Value;
     public IUserService UserService => _userService.Value;
     public IMeetingService MeetingService => _meetingService.Value;
+
+    public IParticipantService ParticipantService => _participantService.Value;
 }

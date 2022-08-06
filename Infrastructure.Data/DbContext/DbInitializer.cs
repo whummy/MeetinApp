@@ -96,7 +96,6 @@ namespace Infrastructure.Data.DbContext
                     Email = email,
                     UserName = email,
                     PhoneNumber = "07036HRMS000",
-                    MeetingId = Guid.Parse("BC971EA3-02B9-47FC-876D-49FF237229F5"),
                 };
 
                 var result = await userManager.CreateAsync(newUser, "Admin123@");
