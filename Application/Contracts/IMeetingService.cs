@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Application.DataTransferObjects;
+using Application.Helpers;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,5 +10,6 @@ namespace Application.Contracts
 {
     public interface IMeetingService
     {
+        Task<SuccessResponse<MeetingDTO>> CreateMeeting(MeetingCreateDTO model);
     }
 }

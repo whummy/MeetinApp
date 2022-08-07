@@ -38,7 +38,7 @@ public class AuthController : ControllerBase
     /// </summary>
     /// <param name="model"></param>
     /// <returns></returns>
-    //[Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "User")]
     [HttpPost]
     [Route("register")]
     [ProducesResponseType(typeof(SuccessResponse<UserDTO>), 200)]

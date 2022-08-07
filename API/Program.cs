@@ -1,4 +1,5 @@
 using API.Extensions;
+using API.Helpers;
 using API.Middlewares;
 using Infrastructure.Data.DbContext;
 using Microsoft.AspNetCore.Mvc.ApiExplorer;
@@ -93,5 +94,5 @@ app.UseAuthorization();
 app.UseErrorHandler();
 
 app.MapControllers();
-//WebHelper.Configure(app.Services.GetRequiredService<IHttpContextAccessor>());
+WebHelper.Configure(app.Services.GetRequiredService<IHttpContextAccessor>());
 app.Run();

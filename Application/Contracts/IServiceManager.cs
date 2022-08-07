@@ -6,5 +6,4 @@ public interface IServiceManager
     IUserService UserService { get; }
     IMeetingService MeetingService { get; }
     IParticipantService ParticipantService { get; }
-
 }

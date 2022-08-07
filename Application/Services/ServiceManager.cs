@@ -3,6 +3,7 @@ using AutoMapper;
 using Domain.Entities.Identities;
 using Infrastructure.Contracts;
 using Infrastructure.Utils.Logger;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 
@@ -21,7 +22,7 @@ public class ServiceManager : IServiceManager
         IMapper mapper,
         UserManager<User> userManager,
         RoleManager<Role> roleManager,
-        IConfiguration configuration)
+        IConfiguration configuration, IHttpContextAccessor _httpAccessor)
     {
         _authenticationService =
             new Lazy<IAuthenticationService>(
@@ -33,7 +34,7 @@ public class ServiceManager : IServiceManager
         _meetingService = new Lazy<IMeetingService>(
                 () => new MeetingService(repositoryManager, mapper));
         _participantService = new Lazy<IParticipantService>(
-                () => new ParticipantService(repositoryManager, mapper));
+                () => new ParticipantService(repositoryManager, mapper, _httpAccessor, userManager));
     }
 
     public IAuthenticationService AuthenticationService => _authenticationService.Value;
