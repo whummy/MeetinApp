@@ -10,6 +10,7 @@ public interface IRepositoryManager
     IUserRepository User { get; }
     IMeetingRepository Meeting { get; }
     IUserRoleRepository UserRole { get; }
+    IParticipantRepository Participant { get; }
     //ITokenRepository Token { get; }
     Task BeginTransaction(Func<Task> action);
     Task SaveChangesAsync();

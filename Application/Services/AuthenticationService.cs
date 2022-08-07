@@ -67,9 +67,9 @@ namespace Application.Services
             await IsEmailExist(model);
             var user = _mapper.Map<User>(model);
             user.UserName = user.Email;
-            user.Password = _userManager.PasswordHasher.HashPassword(user, model.Password);
+            //user.Password = _userManager.PasswordHasher.HashPassword(user, model.Password);
 
-            var result = await _userManager.CreateAsync(user, user.Password);
+            var result = await _userManager.CreateAsync(user, model.Password);
             Guard.AgainstFailedTransaction(result.Succeeded);
             // add user to role
             if (!await _userManager.IsInRoleAsync(user, model.Role))
@@ -86,7 +86,8 @@ namespace Application.Services
         {
             var email = model.Email.Trim().ToLower();
             var user = await _repository.User.Get(x => x.Email == email).FirstOrDefaultAsync();
-            Guard.AgainstDuplicate(user, "Email address already exists");
+            Guard.AgainstDuplicate(user, "Meeting already exists");
+
         }
         private async Task<bool> ValidateUser(User user, string password)
         {

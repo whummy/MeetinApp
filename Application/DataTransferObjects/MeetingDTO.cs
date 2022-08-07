@@ -9,11 +9,11 @@ namespace Application.DataTransferObjects
     public class MeetingDTO : MeetingCreateDTO
     {
         public Guid Id { get; set; }
+        public int MeetingCode { get; set; }
     }
 
     public class MeetingCreateDTO
     {
-        public int MeetingCode { get; set; }
         public string Title { get; set; }
         public DateTime StartTime { get; set; }
         public DateTime EndTime { get; set; }
