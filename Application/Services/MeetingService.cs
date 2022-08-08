@@ -4,6 +4,7 @@ using Application.Helpers;
 using AutoMapper;
 using Domain.Entities;
 using Infrastructure.Contracts;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 
@@ -36,6 +37,49 @@ namespace Application.Services
             };
         }
 
+        public async Task<PagedResponse<IEnumerable<ParticipantGetDTO>>> GetParticipantsByMeeting(Guid meetingId, ResourceParameter parameter, string name, IUrlHelper urlHelper)
+        {
+            var meeting = await _repository.Meeting.Get(x => x.Id == meetingId).FirstOrDefaultAsync();
+            Guard.AgainstNull(meeting);
+
+            IQueryable<Participant> query;
+            query = _repository.Participant.QueryAll()
+                        .Include(x => x.User)
+                        .Where(x => x.MeetingId == meetingId);
+
+            var agentsQuery = query.Select(x => new ParticipantGetDTO
+            {
+                Id = x.UserId,
+                FirstName = x.User.FirstName,
+                LastName = x.User.LastName,
+                Email = x.User.Email,
+                PhoneNumber = x.User.PhoneNumber,
+            });
+
+            if (!string.IsNullOrWhiteSpace(parameter.Search))
+            {
+                var search = parameter.Search.Trim().ToLower();
+                agentsQuery = agentsQuery.Where(
+                    a => a.FirstName.ToLower().Contains(search) || a.LastName.ToLower().Contains(search)
+                        || a.Email.ToLower().Contains(search));
+            };
+
+            var pagedParticipantsDto = await PagedList<ParticipantGetDTO>.CreateAsync(agentsQuery, parameter.PageNumber, parameter.PageSize, parameter.Sort);
+            var page = PageUtility<ParticipantGetDTO>.CreateResourcePageUrl(parameter, name, pagedParticipantsDto, urlHelper);
+
+            var response = new PagedResponse<IEnumerable<ParticipantGetDTO>>
+            {
+                Message = "Data retrieved successfully",
+                Data = pagedParticipantsDto,
+                Meta = new Meta
+                {
+                    Pagination = page
+                }
+            };
+            return response;
+
+        }
+
         private string GenerateCode()
         {
             Random rnd = new Random();
@@ -44,4 +88,5 @@ namespace Application.Services
             return $"{randomNumber1}{randomNumber1}";
         }
     }
+
 }

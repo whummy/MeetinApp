@@ -34,4 +34,20 @@ public class MeetingController : ControllerBase
         var response = await _service.MeetingService.CreateMeeting(model);
         return Ok(response);
     }
+
+    /// <summary>
+    /// Endpoint to get all participant in a meeting
+    /// </summary>
+    /// <param name="id">meetingId</param>
+    /// <param name="parameter"></param>
+    /// <returns></returns>
+    //[Authorize(Roles = "User")]
+    [HttpGet("{id}/participants")]
+    [ProducesResponseType(typeof(PagedResponse<IEnumerable<ParticipantGetDTO>>), 200)]
+    public async Task<IActionResult> GetParticipantsByMeeting(Guid id, [FromQuery] ResourceParameter parameter)
+    {
+        var response = await _service.MeetingService.GetParticipantsByMeeting(id, parameter: parameter,
+            nameof(GetParticipantsByMeeting), Url);
+        return Ok(response);
+    }
 }

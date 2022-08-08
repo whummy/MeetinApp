@@ -7,6 +7,7 @@ using Domain.Entities.Identities;
 using Infrastructure.Contracts;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
 using System.Security.Claims;
@@ -36,8 +37,11 @@ namespace Application.Services
 
             var userId = loggedinUser.UserId;
 
+            var IsInMeeting = await _repository.Participant.Get(x => x.UserId == userId && x.MeetingId == meeting.Id).FirstOrDefaultAsync();
+            Guard.AgainstDuplicate(IsInMeeting, "You are already in the meeting");
+
             // we want a participant equivalent to the user with id userId
-            
+
             var newParticipant = new Participant { UserId = userId, MeetingId = meeting.Id };
 
             await _repository.Participant.AddAsync(newParticipant);
@@ -52,5 +56,7 @@ namespace Application.Services
             };
 
         }
+
+        
     }
 }
