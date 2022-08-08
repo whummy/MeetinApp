@@ -4,6 +4,7 @@ using Application.Helpers;
 using AutoMapper;
 using Domain.ConfigurationModels;
 using Domain.Entities.Identities;
+using Domain.Enums;
 using Domain.Exceptions;
 using Infrastructure.Contracts;
 using Infrastructure.Utils.Logger;
@@ -72,8 +73,9 @@ namespace Application.Services
             var result = await _userManager.CreateAsync(user, model.Password);
             Guard.AgainstFailedTransaction(result.Succeeded);
             // add user to role
-            if (!await _userManager.IsInRoleAsync(user, model.Role))
-                await _userManager.AddToRoleAsync(user, model.Role);
+            var role = ERole.User.ToString();
+            if (!await _userManager.IsInRoleAsync(user, role))
+                await _userManager.AddToRoleAsync(user, role);
             await _repository.SaveChangesAsync();
             var userResponse = _mapper.Map<UserDTO>(user);
             return new SuccessResponse<UserDTO>
@@ -86,7 +88,7 @@ namespace Application.Services
         {
             var email = model.Email.Trim().ToLower();
             var user = await _repository.User.Get(x => x.Email == email).FirstOrDefaultAsync();
-            Guard.AgainstDuplicate(user, "Meeting already exists");
+            Guard.AgainstDuplicate(user, "User already exists");
 
         }
         private async Task<bool> ValidateUser(User user, string password)

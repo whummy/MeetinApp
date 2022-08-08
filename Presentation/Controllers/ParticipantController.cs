@@ -36,4 +36,5 @@ public class ParticipantController : BaseController
         var response = await _service.ParticipantService.JoinMeeting(meetingCode, LoggedInUser);
         return Ok(response);
     }
+    
 }

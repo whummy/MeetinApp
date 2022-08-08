@@ -12,7 +12,7 @@ namespace Application.Helpers
         public static void AgainstDuplicate<T>(T value, string message = null, HttpStatusCode code = HttpStatusCode.BadRequest)
         {
             if (value != null)
-                throw new RestException(code, $"Duplicate {typeof(T).Name}", message);
+                throw new RestException(code, message);
         }
         public static void AgainstNotInRole(bool value, string message = null, HttpStatusCode code = HttpStatusCode.NotFound)
         {
